@@ -1,5 +1,15 @@
 {
   "name": "RuneData",
-  "description": "A minimalist RuneScape data search engine.",
+  "description": "Search Old School RuneScape items instantly with live Grand Exchange pricing, buy limits, and detailed stats.",
+  "url": "https://beaudenison.github.io/RuneData/",
+  "image": "https://beaudenison.github.io/RuneData/og-image.svg",
+  "keywords": [
+    "RuneData",
+    "OSRS",
+    "Old School RuneScape",
+    "Grand Exchange",
+    "GE prices",
+    "item search"
+  ],
   "requestFramePermissions": []
 }
