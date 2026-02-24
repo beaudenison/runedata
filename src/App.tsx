@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Search, Loader2, TrendingUp, TrendingDown, Coins, Info, Shield, Clock, X } from 'lucide-react';
+import { Search, Loader2, TrendingUp, TrendingDown, Coins, Info, Shield, Clock, X, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { toPng } from 'html-to-image';
 
 // --- API Services ---
 interface ItemMapping {
@@ -121,8 +122,11 @@ export default function App() {
   const [selectedItem, setSelectedItem] = useState<ItemMapping | null>(null);
   const [isFocused, setIsFocused] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
   
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -244,6 +248,7 @@ export default function App() {
 
   const handleSelectItem = (item: ItemMapping) => {
     setSelectedItem(item);
+    setExportError(null);
     setQuery('');
     setIsFocused(false);
     setFocusedIndex(-1);
@@ -251,6 +256,7 @@ export default function App() {
 
   const clearSelection = () => {
     setSelectedItem(null);
+    setExportError(null);
     setQuery('');
     setFocusedIndex(-1);
     setTimeout(() => {
@@ -281,6 +287,40 @@ export default function App() {
       }
     } else if (e.key === 'Escape') {
       setIsFocused(false);
+    }
+  };
+
+  const handleSaveCard = async () => {
+    if (!cardRef.current || !selectedItem) return;
+
+    setExportError(null);
+    setIsExporting(true);
+
+    try {
+      const dataUrl = await toPng(cardRef.current, {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: '#141414',
+        filter: (node) => {
+          if (!(node instanceof HTMLElement)) return true;
+          return !node.classList.contains('card-actions');
+        }
+      });
+
+      const safeName = selectedItem.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+
+      const link = document.createElement('a');
+      link.download = `runedata-${safeName || 'item'}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error('Failed to export card', err);
+      setExportError('Unable to export image. Please try again.');
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -359,6 +399,7 @@ export default function App() {
                                 src={`https://oldschool.runescape.wiki/images/${item.icon.replace(/ /g, '_')}`} 
                                 alt={item.name}
                                 className="max-w-full max-h-full object-contain"
+                                crossOrigin="anonymous"
                                 onError={(e) => {
                                   (e.target as HTMLImageElement).src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM1NTUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIvPjwvc3ZnPg==';
                                 }}
@@ -412,16 +453,29 @@ export default function App() {
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
             className="w-full max-w-2xl mt-8"
           >
-            <div className="bg-[#141414] border border-white/10 rounded-3xl p-6 sm:p-8 relative overflow-hidden">
+            <div ref={cardRef} className="bg-[#141414] border border-white/10 rounded-3xl p-6 sm:p-8 relative overflow-hidden">
               {/* Decorative background glow */}
               <div className="absolute -top-24 -right-24 w-48 h-48 bg-white/5 rounded-full blur-3xl pointer-events-none" />
               
-              <button 
-                onClick={clearSelection}
-                className="absolute top-6 right-6 text-white/30 hover:text-white transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="absolute top-6 right-6 flex items-center gap-2 card-actions">
+                <button 
+                  onClick={handleSaveCard}
+                  disabled={isExporting}
+                  title="Save image"
+                  aria-label="Save image"
+                  className="text-white/30 hover:text-white transition-colors disabled:opacity-50"
+                >
+                  {isExporting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+                </button>
+                <button 
+                  onClick={clearSelection}
+                  title="Close"
+                  aria-label="Close"
+                  className="text-white/30 hover:text-white transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
               <div className="flex flex-col gap-8">
                 <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 items-start">
@@ -431,6 +485,7 @@ export default function App() {
                       src={`https://oldschool.runescape.wiki/images/${selectedItem.icon.replace(/ /g, '_')}`} 
                       alt={selectedItem.name}
                       className="max-w-full max-h-full object-contain drop-shadow-2xl scale-125"
+                      crossOrigin="anonymous"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM1NTUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIvPjwvc3ZnPg==';
                       }}
@@ -450,6 +505,11 @@ export default function App() {
                     <p className="text-white/50 text-sm mb-6 leading-relaxed">
                       {selectedItem.examine}
                     </p>
+                    {exportError && (
+                      <div className="mb-4 text-rose-400/80 text-xs font-mono">
+                        {exportError}
+                      </div>
+                    )}
 
                     {/* Market Data Grid */}
                     <div className="grid grid-cols-2 gap-4">
