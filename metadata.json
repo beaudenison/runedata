@@ -1,0 +1,5 @@
+{
+  "name": "RuneData",
+  "description": "A minimalist RuneScape data search engine.",
+  "requestFramePermissions": []
+}
