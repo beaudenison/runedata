@@ -1,5 +1,11 @@
 # RuneData
 
+<p align="center">
+   <a href="https://beaudenison.github.io/RuneData/">
+      <img src="https://img.shields.io/badge/🚀%20Open%20Live%20Tool-Visit%20RuneData-2ea44f?style=for-the-badge" alt="Open Live Tool" />
+   </a>
+</p>
+
 A minimalist, high-performance RuneScape data search engine built with React, Vite, and Tailwind CSS.
 
 ## Overview
